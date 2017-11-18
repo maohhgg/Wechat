@@ -2,5 +2,6 @@
 return $config = [
     'token' => '',
     'AppID' => '',
-    'AppSecret' => ''
+    'AppSecret' => '',
+    'originID' => ''   // 注册信息 -> 原始id
 ];
