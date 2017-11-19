@@ -2,6 +2,7 @@
 
 namespace app;
 
+use wechat\bulid\Message;
 use wechat\Wechat;
 
 class Entry
@@ -18,16 +19,17 @@ class Entry
     {
 
         $message = $this->wechat->instance('message');
-        if ($message->isTextMsg()) {
-            $message->text('你发送的文本消息 + 你的AccessToken：' . $this->wechat->getAccessToken());
-        } elseif ($message->isImageMsg()) {
-            $message->text('你发送的图片消息');
-        } elseif ($message->isVoiceMsg()) {
-            $message->text('你发送的语音消息');
-        } elseif ($message->isLocationMsg()) {
-            $message->text('你发送的定位消息');
-        } elseif ($message->isLinkMsg()) {
-            $message->text('你发送的链接');
+        if ($message->isSubscribeEvent()) {
+            $message->setMessageContent('感谢关注 发送“/帮助”获取帮助')->send();
+        } elseif ($message->isUnSubscribeEvent()) {
+
+        }
+        $msgContent = $message->getMessageContent();
+        if (!isset($msgContent['error'])) {
+//            $message->setMessageContent([1,[$msgContent['content'],'test','http://104.194.65.219/wechat/1.png','magnet:?xt=urn:btih:40e11fc80842add338235ca8ff85afe8e861b983']], Message::MSG_TYPE_NEWS);
+//            $message->send();
+            $message->setMessageContent('magnet:?xt=urn:btih:40e11fc80842add338235ca8ff85afe8e861b983')->send();
+            $message->setMessageContent('11')->send();
         }
 
     }
