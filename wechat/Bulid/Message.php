@@ -2,7 +2,7 @@
 
 namespace Wechat\bulid;
 
-use function Wechat\common\config;
+use function Wechat\Common\config;
 use Wechat\Wechat;
 
 /**
@@ -111,17 +111,17 @@ class Message extends Wechat
             case self::MSG_TYPE_TEXT:
                 $msgContent = [
                     'type' => $this->getMessageType(),
-                    'content' => $this->message->Content];
+                    'content' => (string)$this->message->Content];
                 break;
             case self::MSG_TYPE_VOICE:
                 $msgContent = [
                     'type' => $this->getMessageType(),
-                    'content' => $this->message->Recognition];
+                    'content' => (string)$this->message->Recognition];
                 break;
             case self::MSG_TYPE_LINK:
                 $msgContent = [
                     'type' => $this->getMessageType(),
-                    'content' => $this->message->Url];
+                    'content' => (string)$this->message->Url];
                 break;
             default:
                 $msgContent = [

@@ -2,8 +2,8 @@
 
 namespace app;
 
-use Wechat\bulid\Handler;
-use Wechat\bulid\Message;
+use App\Handle\Handler;
+use Wechat\Bulid\Message;
 use Wechat\Wechat;
 
 class Entry
@@ -32,7 +32,7 @@ class Entry
 
             $message->setMessageContent(
                 json_encode(
-                    (new Handler())->setText($msgContent['content'])
+                    Handler::setText($msgContent['content'])
                         ->Analyst()
                         ->getResult()
                 )

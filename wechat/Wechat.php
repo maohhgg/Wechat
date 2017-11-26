@@ -51,7 +51,7 @@ class Wechat extends Error
     public function getAccessToken()
     {
         $cacheName = md5(config('AppID') . config('AppSecret'));
-        $file = __DIR__ . '/cache/' . $cacheName . '.php';
+        $file = APP_PATH .'Cache/'. $cacheName . '.php';
 
         if (is_file($file) && filemtime($file) + 7100 > time()) {
             $cacheArrayData = include $file;
