@@ -1,5 +1,5 @@
 <?php
-namespace wechat;
+namespace Wechat;
 
 class Error {
     protected $error

@@ -2,19 +2,19 @@
 
 namespace wechat;
 
+use function wechat\common\config;
+
+
 class Wechat extends Error
 {
-    static $CONF = [];
     protected $message;
     protected $accessToken = null;
 
-    public function __construct(array $config = [])
+    public function __construct()
     {
-        if (!empty($config)) {
-            self::$CONF = $config;
-        }
         $this->message = $this->parsePostRequestData();
     }
+
 
     // 微信服务验证使用
     public function valid()
@@ -25,7 +25,7 @@ class Wechat extends Error
             $timestamp = $_GET["timestamp"];
             $nonce = $_GET["nonce"];
 
-            $token = self::$CONF['token'];
+            $token = config('token');
             $tmpArr = array($token, $timestamp, $nonce);
             sort($tmpArr);
             $tmpStr = implode($tmpArr);
@@ -50,13 +50,13 @@ class Wechat extends Error
      */
     public function getAccessToken()
     {
-        $cacheName = md5(self::$CONF['AppID'] . self::$CONF['AppSecret']);
+        $cacheName = md5(config('AppID') . config('AppSecret'));
         $file = __DIR__ . '/cache/' . $cacheName . '.php';
 
         if (is_file($file) && filemtime($file) + 7100 > time()) {
             $cacheArrayData = include $file;
         } else {
-            $url = 'https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=' . self::$CONF['AppID'] . '&secret=' . self::$CONF['AppSecret'];
+            $url = 'https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=' . config('AppID') . '&secret=' . config('AppSecret');
             $data = $this->curl($url);
             $cacheArrayData = json_decode($data, true);
             //获取失败
@@ -112,15 +112,5 @@ class Wechat extends Error
         if (!empty($postData)) {
             return simplexml_load_string($postData, 'SimpleXMLElement', LIBXML_NOCDATA);
         }
-    }
-
-    /**
-     * @param $name
-     * @return mixed
-     */
-    public function instance($name)
-    {
-        $class = 'wechat\bulid\\' . ucfirst($name);
-        return new $class;
     }
 }
