@@ -1,8 +1,8 @@
 <?php
 
-namespace wechat;
+namespace Wechat;
 
-use function wechat\common\config;
+use function Wechat\common\config;
 
 
 class Wechat extends Error

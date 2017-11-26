@@ -1,9 +1,9 @@
 <?php
 
-namespace wechat\bulid;
+namespace Wechat\bulid;
 
-
-use wechat\Wechat;
+use function Wechat\common\config;
+use Wechat\Wechat;
 
 /**
  * Class Message
@@ -134,6 +134,7 @@ class Message extends Wechat
         return $msgContent;
     }
 
+
     public function setMessageContent($content = null, $option = self::MSG_TYPE_TEXT, $userName = null)
     {
         if (!$content) {
@@ -141,21 +142,32 @@ class Message extends Wechat
         }
         $xml = '<xml>';
         $xml .= '<ToUserName><![CDATA[' . ($userName == null ? $this->getMessageFromUserID() : $userName) . ']]></ToUserName>';
-        $xml .= '<FromUserName><![CDATA[' . Wechat::$CONF['originID'] . ']]></FromUserName>';
+        $xml .= '<FromUserName><![CDATA[' . config('originID') . ']]></FromUserName>';
         $xml .= '<CreateTime>' . time() . '</CreateTime>';
-        $xml .= '<MsgType><![CDATA['. $option . ']]></MsgType>';
+        $xml .= '<MsgType><![CDATA[' . $option . ']]></MsgType>';
 
         switch ($option) {
             case self::MSG_TYPE_TEXT:
-                $xml .= '<Content><![CDATA['. $content . ']]></Content>';
+                $xml .= '<Content><![CDATA[' . $content . ']]></Content>';
+                break;
+
+            case self::MSG_TYPE_VOICE:
+            case self::MSG_TYPE_IMAGE:
+                $xml .= '<Image><MediaId><![CDATA[' . $content['media_id'] . ']]></MediaId></Image>';
+                break;
+
+            case self::MSG_TYPE_VIDEO:
+                $xml .= '<Video><MediaId><![CDATA[' . $content['media_id'] . ']]></MediaId>';
+                $xml .= '<Title><![CDATA[' . $content['title'] . ']]></Title>';
+                $xml .= '<Description><![CDATA[' . $content['description'] . ']]></Description></Video>';
                 break;
 
             case self::MSG_TYPE_NEWS:
                 $xml .= '<ArticleCount>' . $content[0] . '</ArticleCount><Articles>';
                 for ($i = 1; $i <= $content[0]; $i++) {
-                    $xml .= '<item><Title><![CDATA['. $content[$i][0] . ']]></Title>';
-                    $xml .= '<Description><![CDATA['. $content[$i][1] . ']]></Description>';
-                    $xml .= '<PicUrl><![CDATA[' .$content[$i][2] . ']]></PicUrl>';
+                    $xml .= '<item><Title><![CDATA[' . $content[$i][0] . ']]></Title>';
+                    $xml .= '<Description><![CDATA[' . $content[$i][1] . ']]></Description>';
+                    $xml .= '<PicUrl><![CDATA[' . $content[$i][2] . ']]></PicUrl>';
                     $xml .= '<Url><![CDATA[' . $content[$i][3] . ']]></Url></item>';
                 }
                 $xml .= '</Articles>';
@@ -170,7 +182,7 @@ class Message extends Wechat
         return $this;
     }
 
-    public function send($content)
+    public function send()
     {
         if ($this->msgContent) {
             header('Content-type:application/xml');

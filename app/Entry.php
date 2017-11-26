@@ -1,28 +1,44 @@
 <?php
+
 namespace app;
-use wechat\bulid\Message;
-use wechat\Wechat;
+
+use Wechat\bulid\Handler;
+use Wechat\bulid\Message;
+use Wechat\Wechat;
+
 class Entry
 {
     protected $wechat;
-    public function __construct($config = [])
+
+    public function __construct()
     {
-        $this->wechat = new Wechat($config);
+        // 每次进行的微信验证
+        $this->wechat = new Wechat();
         $this->wechat->valid();
     }
+
     public function handler()
     {
-        $message = $this->wechat->instance('message');
+
+        $message = new Message();
         if ($message->isSubscribeEvent()) {
             $message->setMessageContent('感谢关注 发送“/帮助”获取帮助')->send();
-        } elseif ($message->isUnSubscribeEvent()) {
+        } else if ($message->isUnSubscribeEvent()) {
+            echo "MMP";
         }
+
         $msgContent = $message->getMessageContent();
         if (!isset($msgContent['error'])) {
-//            $message->setMessageContent([1,[$msgContent['content'],'test','http://104.194.65.219/wechat/1.png','magnet:?xt=urn:btih:40e11fc80842add338235ca8ff85afe8e861b983']], Message::MSG_TYPE_NEWS);
-//            $message->send();
-            $message->setMessageContent('magnet:?xt=urn:btih:40e11fc80842add338235ca8ff85afe8e861b983')->send();
-            $message->setMessageContent('11')->send();
+
+            $message->setMessageContent(
+                json_encode(
+                    (new Handler())->setText($msgContent['content'])
+                        ->Analyst()
+                        ->getResult()
+                )
+            )->send();
+
         }
+
     }
 }

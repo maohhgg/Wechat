@@ -21,11 +21,6 @@ function configApp($file)
 
 function model($name)
 {
-    $class = '\app\model\\' . ucfirst($name);
-    return new $class;
-}
-
-function classLoad($name){
-    $class = '\wechat\bulid\\' . ucfirst($name);
+    $class = '\App\model\\' . ucfirst($name);
     return new $class;
 }
