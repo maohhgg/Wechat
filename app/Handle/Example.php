@@ -23,7 +23,7 @@ class Example
 
         'get' => [['获取', '下载'], self::MOVIE, self::FUNC],
 
-        'movie' => ['电影', self::MOVIE, self::OPTION],
+        'chinese_name' => ['电影', self::MOVIE, self::OPTION],
         'tv' => ['电视剧', self::MOVIE, self::FUNC],
         'douban' => [['豆瓣', '豆瓣号'], self::MOVIE, self::OPTION],
         'director' => ['导演', self::MOVIE, self::OPTION],

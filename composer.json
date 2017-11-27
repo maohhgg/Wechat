@@ -4,7 +4,8 @@
     "type": "peoject",
     "require": {
         "illuminate/database": "^5.5",
-        "php": "~7.0"
+        "php": "~7.0",
+        "illuminate/events": "^5.5"
     },
     "autoload": {
         "psr-4": {

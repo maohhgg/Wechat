@@ -2,8 +2,15 @@
 
 namespace app;
 
+
+use Illuminate\Database\Capsule\Manager as Capsule;
+// Set the event dispatcher used by Eloquent models... (optional)
+use Illuminate\Events\Dispatcher;
+use Illuminate\Container\Container;
+
 use App\Handle\Handler;
 use Wechat\Bulid\Message;
+use function Wechat\common\config;
 use Wechat\Wechat;
 
 class Entry
@@ -13,6 +20,16 @@ class Entry
     public function __construct()
     {
         // 每次进行的微信验证
+        $capsule = new Capsule;
+
+        $capsule->addConnection(config('database'));
+
+        $capsule->setEventDispatcher(new Dispatcher(new Container));
+        // Make this Capsule instance available globally via static methods... (optional)
+        $capsule->setAsGlobal();
+        // Setup the Eloquent ORM... (optional; unless you've used setEventDispatcher())
+        $capsule->bootEloquent();
+
         $this->wechat = new Wechat();
         $this->wechat->valid();
     }

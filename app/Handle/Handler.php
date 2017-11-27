@@ -4,7 +4,8 @@ namespace App\Handle;
 
 
 use \App\Handle\Bean\Mean;
-use function Wechat\Common\model;
+use App\Model\Movie;
+use function Wechat\common\config;
 
 /**
  * 消息处理类
@@ -69,13 +70,22 @@ class Handler
      */
     protected function process()
     {
-        switch ($this->msgMean->parameter->type) {
+        var_dump($this->msgMean->index);
+
+        switch ($this->msgMean->parameter->model) {
             case Example::MOVIE:
-//                $movie = model('movie')->where($this->msgMean->parameter->index, $this->msgMean->index)->get();
-//                if ($this->msgMean->action && $this->msgMean->action->index == 'get') {
-//                    $magnet = model()->where;
-//                }
-//                $this->result = $movie;
+
+                $movie = Movie::select()->where(
+                    $this->msgMean->parameter->index,
+                    'LIKE',
+                    $this->msgMean->index
+                )->limit(config('page.number'))->get();
+
+                if ($this->msgMean->action && $this->msgMean->action->index == 'get') {
+
+                }
+                var_dump($movie);
+                $this->result = $movie;
                 break;
             case Example::USER:
 
@@ -114,6 +124,8 @@ class Handler
     {
         if ($this->status == self::END) {
             return $this->result;
+        } else {
+            return null;
         }
     }
 
