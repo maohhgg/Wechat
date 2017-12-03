@@ -19,7 +19,6 @@ class Entry
 
     public function __construct()
     {
-        // 每次进行的微信验证
         $capsule = new Capsule;
 
         $capsule->addConnection(config('database'));
@@ -30,6 +29,7 @@ class Entry
         // Setup the Eloquent ORM... (optional; unless you've used setEventDispatcher())
         $capsule->bootEloquent();
 
+        // 每次进行的微信验证
         $this->wechat = new Wechat();
         $this->wechat->valid();
     }
@@ -48,13 +48,13 @@ class Entry
         if (!isset($msgContent['error'])) {
 
             $message->setMessageContent(
-                json_encode(
-                    Handler::setText($msgContent['content'])
-                        ->Analyst()
-                        ->getResult()
-                )
+                Handler::setText($msgContent['content'])
+                    ->Analyst()
+                    ->getResult()
             )->send();
 
+        } else {
+            $message->setMessageContent($msgContent['error'])->send();
         }
 
     }

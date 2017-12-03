@@ -3,8 +3,9 @@
 namespace App\Handle;
 
 
-use \App\Handle\Bean\Mean;
-use App\Model\Movie;
+use \App\Model\Movie;
+use App\Model\User;
+use Wechat\bulid\Message;
 use function Wechat\common\config;
 
 /**
@@ -38,7 +39,7 @@ class Handler
      */
     protected function textConvert($text)
     {
-        $keys = ['parameter', 'index', 'action', 'other'];
+        $keys = ['param', 'index', 'action', 'other'];
         $values = explode(' ', $text);
 
         if (count($values) > count($keys)) {
@@ -50,7 +51,8 @@ class Handler
                 array_push($values, null);
             }
         }
-        $this->msgValue = Mean::copy(array_combine($keys, $values));
+
+        $this->msgValue = array_combine($keys, $values);
         return $this;
     }
 
@@ -60,8 +62,8 @@ class Handler
     protected function bind()
     {
         $this->msgMean = $this->msgValue;
-        $this->msgMean->parameter = Example::getExample($this->msgValue->parameter);
-        $this->msgMean->action = Example::getExample($this->msgValue->action);
+        $this->msgMean['param'] = Example::getExample($this->msgValue['param']);
+        $this->msgMean['action'] = Example::getExample($this->msgValue['action']);
         return $this;
     }
 
@@ -70,25 +72,22 @@ class Handler
      */
     protected function process()
     {
-        var_dump($this->msgMean->index);
+        $this->result = ['没有匹配的内容', Message::MSG_TYPE_TEXT];
+        print_r($this->msgMean);
+        switch ($this->msgMean['param']['model']) {
 
-        switch ($this->msgMean->parameter->model) {
             case Example::MOVIE:
-
-                $movie = Movie::select()->where(
-                    $this->msgMean->parameter->index,
-                    'LIKE',
-                    $this->msgMean->index
-                )->limit(config('page.number'))->get();
-
-                if ($this->msgMean->action && $this->msgMean->action->index == 'get') {
-
+                $result = (new Process(Movie::class))->run($this->msgMean,['id','chinese_name','douban','description','img']);
+//                print_r($result);
+                if ($result) {
+                    $this->result = [$result, Message::MSG_TYPE_NEWS];
                 }
-                var_dump($movie);
-                $this->result = $movie;
                 break;
             case Example::USER:
-
+                $result = (new Process(User::class))->run($this->msgMean);
+                if ($result){
+                    $this->result = [$result, Message::MSG_TYPE_TEXT];
+                }
                 break;
         }
         $this->status = self::END;
@@ -113,8 +112,7 @@ class Handler
      */
     public function analyst()
     {
-        $this->bind()->process();
-        return $this;
+        return $this->bind()->process();
     }
 
     /**
