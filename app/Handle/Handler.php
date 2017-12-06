@@ -4,8 +4,8 @@ namespace App\Handle;
 
 
 use \App\Model\Movie;
-use App\Model\User;
-use Wechat\bulid\Message;
+use \App\Model\User;
+use \Wechat\bulid\Message;
 use function Wechat\common\config;
 
 /**
@@ -72,24 +72,25 @@ class Handler
      */
     protected function process()
     {
-        $this->result = ['没有匹配的内容', Message::MSG_TYPE_TEXT];
-        print_r($this->msgMean);
+        $this->result = [config('tip.user.noContent'), Message::MSG_TYPE_TEXT];
+
         switch ($this->msgMean['param']['model']) {
 
             case Example::MOVIE:
-                $result = (new Process(Movie::class))->run($this->msgMean,['id','chinese_name','douban','description','img']);
-//                print_r($result);
+                $result = (new Process(Movie::class))->run($this->msgMean, ['id', 'director', 'actor', 'chinese_name', 'douban', 'description', 'img']);
+
                 if ($result) {
                     $this->result = [$result, Message::MSG_TYPE_NEWS];
                 }
                 break;
             case Example::USER:
                 $result = (new Process(User::class))->run($this->msgMean);
-                if ($result){
+                if ($result) {
                     $this->result = [$result, Message::MSG_TYPE_TEXT];
                 }
                 break;
         }
+
         $this->status = self::END;
         return $this;
     }
@@ -102,7 +103,7 @@ class Handler
     public static function setText($text = '')
     {
         if (!$text) {
-            return (new static())->error('没有内容')->getResult();
+            return (new static())->error(config('tip.user.noContent'))->getResult();
         }
         return (new static())->textConvert($text);
     }

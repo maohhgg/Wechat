@@ -17,9 +17,9 @@ class Process
 
     public function run($data, $param = [])
     {
-        switch ($data['param']['type']){
+        switch ($data['param']['type']) {
             case Example::FUNC:
-                $this->result = $this->model->help();
+                $this->result = $this->model->{$data['param']['index']}($data);
                 break;
             case Example::OPTION:
                 list($column, $operator, $value) = $this->getWhere($data['param']['index'], $data['index']);

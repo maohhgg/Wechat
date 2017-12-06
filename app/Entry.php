@@ -3,6 +3,9 @@
 namespace app;
 
 
+use App\Handle\Event;
+use App\Model\Messages;
+use App\Model\User;
 use Illuminate\Database\Capsule\Manager as Capsule;
 // Set the event dispatcher used by Eloquent models... (optional)
 use Illuminate\Events\Dispatcher;
@@ -38,23 +41,38 @@ class Entry
     {
 
         $message = new Message();
-        if ($message->isSubscribeEvent()) {
-            $message->setMessageContent('感谢关注 发送“/帮助”获取帮助')->send();
-        } else if ($message->isUnSubscribeEvent()) {
-            echo "MMP";
-        }
-
         $msgContent = $message->getMessageContent();
-        if (!isset($msgContent['error'])) {
 
-            $message->setMessageContent(
-                Handler::setText($msgContent['content'])
-                    ->Analyst()
-                    ->getResult()
-            )->send();
+        if ($message->isSubscribeEvent()) {
+            $status = Event::model(User::class)->subscribe($msgContent);
+
+            $status == Event::TYPE_FIRST ?
+                $message->setMessageContent(config('tip.subscribe.first'))->send() :
+                $message->setMessageContent(config('tip.subscribe.back'))->send();
+
+        } else if ($message->isUnSubscribeEvent()) {
+
+            Event::model(User::class)->unSubscribe($msgContent);
 
         } else {
-            $message->setMessageContent($msgContent['error'])->send();
+            $status = Event::model(Messages::class, User::class)->message($msgContent);
+
+            if ($status == Event::TYPE_UNSUBSCRIBE) {
+                $message->setMessageContent(config('tip.subscribe.not'))->send();
+
+            } else if ($status == Event::TYPE_NORMAL) {
+
+                if (!isset($msgContent['error'])) {
+                    $c = Handler::setText($msgContent['content'])
+                        ->Analyst()
+                        ->getResult();
+                    $message->setMessageContent($c)->send();
+
+                } else {
+                    $message->setMessageContent($msgContent['error'])->send();
+                }
+            }
+
         }
 
     }

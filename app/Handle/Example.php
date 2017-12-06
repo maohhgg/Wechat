@@ -54,6 +54,6 @@ class Example
             'model' => self::USER,
             'index' => 'error',
             'type' => self::FUNC,
-            'other' => ''];
+            'other' => $string];
     }
 }
