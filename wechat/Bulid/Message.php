@@ -96,38 +96,56 @@ class Message extends Wechat
 
     public function getMessageType()
     {
-        return $this->message->MsgType;
+        return (string)$this->message->MsgType;
     }
 
     public function getMessageFromUserID()
     {
-        return $this->message->FromUserName;
+        return (string)$this->message->FromUserName;
+    }
+
+    public function getMessageID()
+    {
+        if (isset($this->message->MsgId)){
+            return (string)$this->message->MsgId;
+        }
+        return '0';
+    }
+
+    public function getMessageCreateTime()
+    {
+        return (int)$this->message->CreateTime;
     }
 
     public function getMessageContent()
     {
         $msgType = $this->getMessageType();
+
+        $msgContent = [
+            'type' => $msgType,
+            'uid' => $this->getMessageFromUserID(),
+            'time' => date('Y-m-d H:i:s', $this->getMessageCreateTime()),
+            'msg_id' => $this->getMessageID(),
+            'origin' => json_encode($this->message)
+        ];
+
         switch ($msgType) {
+
             case self::MSG_TYPE_TEXT:
-                $msgContent = [
-                    'type' => $this->getMessageType(),
-                    'content' => (string)$this->message->Content];
+                $msgContent['content'] = (string)$this->message->Content;
                 break;
+
             case self::MSG_TYPE_VOICE:
-                $msgContent = [
-                    'type' => $this->getMessageType(),
-                    'content' => (string)$this->message->Recognition];
+                $msgContent['content'] = (string)$this->message->Recognition;
                 break;
+
             case self::MSG_TYPE_LINK:
-                $msgContent = [
-                    'type' => $this->getMessageType(),
-                    'content' => (string)$this->message->Url];
+                $msgContent['content'] = (string)$this->message->Url;
                 break;
+
             default:
-                $msgContent = [
-                    'error' => 'error',
-                    'type' => $this->getMessageType(),
-                    'content' => '暂不支持的消息'];
+                $msgContent['error'] = 'error';
+                $msgContent['content'] = '';
                 break;
         }
 
@@ -135,13 +153,29 @@ class Message extends Wechat
     }
 
 
-    public function setMessageContent($content = null, $option = self::MSG_TYPE_TEXT, $userName = null)
+    public function setMessageContent($needle = null, $user = null)
     {
+        $content = null;
+        $option = self::MSG_TYPE_TEXT;
+        $token = $user ? $user : $this->getMessageFromUserID();
+
+        if (is_string($needle)) {
+            $content = $needle;
+        }
+
+        if (is_array($needle)) {
+            $content = isset($needle[0]) ? $needle[0] : null;
+            $option = isset($needle[1]) ? $needle[1] : $option;
+            $token = isset($needle[2]) ? $needle[2] : $token;
+        }
+
         if (!$content) {
             $this->msgContent = false;
+            return $this;
         }
+
         $xml = '<xml>';
-        $xml .= '<ToUserName><![CDATA[' . ($userName == null ? $this->getMessageFromUserID() : $userName) . ']]></ToUserName>';
+        $xml .= '<ToUserName><![CDATA[' . $token . ']]></ToUserName>';
         $xml .= '<FromUserName><![CDATA[' . config('originID') . ']]></FromUserName>';
         $xml .= '<CreateTime>' . time() . '</CreateTime>';
         $xml .= '<MsgType><![CDATA[' . $option . ']]></MsgType>';
@@ -163,12 +197,12 @@ class Message extends Wechat
                 break;
 
             case self::MSG_TYPE_NEWS:
-                $xml .= '<ArticleCount>' . $content[0] . '</ArticleCount><Articles>';
-                for ($i = 1; $i <= $content[0]; $i++) {
-                    $xml .= '<item><Title><![CDATA[' . $content[$i][0] . ']]></Title>';
-                    $xml .= '<Description><![CDATA[' . $content[$i][1] . ']]></Description>';
-                    $xml .= '<PicUrl><![CDATA[' . $content[$i][2] . ']]></PicUrl>';
-                    $xml .= '<Url><![CDATA[' . $content[$i][3] . ']]></Url></item>';
+                $xml .= '<ArticleCount>' . $content['count'] . '</ArticleCount><Articles>';
+                foreach ($content['content'] as $item) {
+                    $xml .= '<item><Title><![CDATA[' . $item['title'] . ']]></Title>';
+                    $xml .= '<Description><![CDATA[' . $item['description'] . ']]></Description>';
+                    $xml .= '<PicUrl><![CDATA[' . $item['picUrl'] . ']]></PicUrl>';
+                    $xml .= '<Url><![CDATA[' . $item['url'] . ']]></Url></item>';
                 }
                 $xml .= '</Articles>';
                 break;
@@ -187,7 +221,6 @@ class Message extends Wechat
         if ($this->msgContent) {
             header('Content-type:application/xml');
             echo $this->msgContent;
-//            file_put_contents('1.xml',$this->msgContent);
         }
     }
 

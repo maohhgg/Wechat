@@ -37,13 +37,6 @@ class Wechat extends Error
 
     }
 
-    /**
-     * @return \SimpleXMLElement
-     */
-    public function getMessage()
-    {
-        return $this->message;
-    }
 
     /**
      * @return string
