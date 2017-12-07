@@ -2,6 +2,10 @@
 
 namespace App\Handle;
 
+use App\Model\Magnet;
+use App\Model\Movie;
+use App\Model\User;
+
 use function Wechat\common\config;
 
 class Process
@@ -18,47 +22,46 @@ class Process
     public function run($data, $param = [], $limit = null)
     {
         $limit = $limit ? $limit : config('page.number');
-        switch ($data['type']) {
-            case Example::TYPE_FUNC:
-                $this->result = $this->model->{$data['index']}($data);
-                break;
-            case Example::TYPE_OPTION:
 
-                $total = ($this->model)
-                    ->select($param)
-                    ->where(
-                        $this->getWhere($data['index'], $data['param'])
-                    )->count();
-                if ($total > 0) {
-                    $this->result = ($this->model)
-                        ->select($param)
-                        ->where(
-                            $this->getWhere($data['index'], $data['param'])
-                        )->limit($limit)
-                        ->get()
-                        ->toArray();
-                    var_dump($total);
-                    $this->result = $this->getNews($this->result, $total);
-                } else {
-                    $this->result = null;
-                }
-
+        switch (get_class($this->model)) {
+            case User::class:
+                $this->result = $this->model->{$data}($data);
                 break;
-            default:
+            case Movie::class:
+                $this->get($data, $param, $limit);
+                break;
+            case Magnet::class:
+                $this->get($data, $param, $limit);
                 break;
         }
         return $this->result;
     }
 
-    protected function getWhere($where, $data)
+    private function get($data, $param, $limit)
+    {
+        $total = $this->model->select($param)->where($this->getWhere($data))->count();
+
+        if ($total > 0) {
+            $this->result = $this->model
+                ->select($param)
+                ->where($this->getWhere($data))
+                ->limit($limit)
+                ->get()
+                ->toArray();
+
+            $this->result = $this->getNews($this->result, $total);
+        } else {
+            $this->result = null;
+        }
+    }
+
+    protected function getWhere($data)
     {
         $result = [];
-        if (is_array($where) && count($where) == count($data)) {
-            for ($i = 0; $i < count($where); $i++) {
-                array_push($result, $this->getWhereIn($where[$i], $data[$i]));
+        if (is_array($data)) {
+            for ($i = 0; $i < count($data); $i++) {
+                array_push($result, $this->getWhereIn($data[$i][0], $data[$i][1]));
             }
-        } else {
-            array_push($result, $this->getWhereIn($where, $data));
         }
         return $result;
     }

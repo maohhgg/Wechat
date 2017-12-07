@@ -101,4 +101,11 @@ class Event
         }
         return self::TYPE_NORMAL;
     }
+
+
+    public function userLastAction($msg, $data){
+        if ($this->model && is_array($msg) && $data){
+            ($this->model)->where('token', $msg['uid'])->update(['last_at' => json_encode($data)]);
+        }
+    }
 }

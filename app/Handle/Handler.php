@@ -6,7 +6,6 @@ namespace App\Handle;
 use App\Model\Magnet;
 use \App\Model\Movie;
 use \App\Model\User;
-use Illuminate\Support\Collection;
 use \Wechat\bulid\Message;
 use function Wechat\common\config;
 
@@ -18,8 +17,6 @@ use function Wechat\common\config;
  */
 class Handler
 {
-    const ERROR_DEV = 'developer';
-    const ERROR_USER = 'user';
 
     protected $msgValue;
     protected $msgMean;
@@ -27,7 +24,6 @@ class Handler
     protected $result;
 
     protected $status;
-    protected $errorTip;
 
     /**
      * 将发送来的中文语句分解成数组
@@ -36,39 +32,51 @@ class Handler
      */
     protected function textConvert($text)
     {
-        $keys = ['param', 'param_index', 'action', 'action_index', 'other'];
         $values = explode(' ', $text);
+        $this->msgValue = $values;
 
-        // 保证中文处理后长度始终等于$keys的长度
-        if (count($values) > count($keys)) {
-            while (count($values) > count($keys)) {
-                $values[count($keys) - 1] .= array_pop($values);
-            }
-        } else {
-            while (count($values) < count($keys)) {
-                array_push($values, null);
-            }
+        for ($i = 0; $i < count($values); $i++) {
+            $values[$i] = Example::getExample($values[$i]);
         }
-
-        $this->msgValue = array_combine($keys, $values); // $keys作为key $values作为value 合并数组
+        $this->msgMean = $values;
         return $this;
     }
 
     /**
-     * 根据中文分解后的数组中的 param 判断处理方式
+     * 根据中文分解后的数组判断处理方式
      * @return $this
      */
     protected function bind()
     {
-        $this->msgMean = $this->msgValue;
-        $this->msgMean['param'] = Example::getExample($this->msgValue['param']);
-        $this->msgMean['param']['param'] = $this->msgValue['param_index'] ? $this->msgValue['param_index'] : null;
+        $array = [];
 
-        $this->msgMean['action'] = Example::getExample($this->msgValue['action']);
-        if ($this->msgValue['action_index']) {
-            $this->msgMean['action']['param'] = $this->msgValue['action_index'];
+        foreach ($this->msgMean as $key => $item) {
+            if (is_array($item)) {
+                $temp = [];
+                if (!isset($array[$item['model']])) $array[$item['model']] = [];
+
+                switch ($item['type']) {
+                    case Example::TYPE_OPTION:
+                        $temp = ['is_movie', $item['index'] == Example::IS_MOVIE];
+                        array_push($array[$item['model']], ['chinese_name', $this->msgValue[$key + 1]]);
+                        break;
+
+                    case Example::TYPE_INDEX:
+                        $temp = [$item['index'], $this->msgValue[$key + 1]];
+                        break;
+
+                    case Example::TYPE_VALUE:
+                        $temp = [$item['index'], $item['param']];
+                        break;
+
+                    default:
+                        $temp = [$item['index']];
+                        break;
+                }
+                array_push($array[$item['model']], $temp);
+            }
         }
-
+        $this->msgMean = $array;
         return $this;
     }
 
@@ -78,61 +86,56 @@ class Handler
     protected function process()
     {
         $msgType = Message::MSG_TYPE_TEXT;
-        $result = config('tip.message.notGetContent');
-
-        $param = $this->msgMean['param'];
-        $action = $this->msgMean['action'];
-        var_dump($this->msgMean);
-        switch ($param['model']) {
-            // 查找电影
-            case Example::MODEL_MOVIE:
-
-                // 附加条件为movie
-                if ($action && $action['model'] == Example::MODEL_MOVIE && $action['type'] == Example::TYPE_OPTION) {
-
-                    $param['index'] = [$action['index'], $param['index']];
-                    $param['param'] = [$action['param'], $param['param']];
-                }
-
-                $msgType = Message::MSG_TYPE_NEWS;
-                // 传入模型去处理 得到电影或电视剧信息
-                $result = (new Process(Movie::class))->run($param, Movie::$bindArrayParam);
-
-                if (!$result) {
-                    $msgType = Message::MSG_TYPE_TEXT;
-                    $result = sprintf(config('tip.movie.noContent'), $this->msgMean['param_index']."+".$this->msgMean['action_index']);
-                    break;
-                }
-
-                // 附加条件 "下载"
-                if ($action && $action['model'] == Example::MODEL_MAGNET && $result['count'] == 1) {
-
-                    $action['param'] = $result['content'][0]['id'];
-
-                    $msgType = Message::MSG_TYPE_TEXT;
-                    $array = (new Process(Magnet::class))->run($action, Magnet::$bindArrayParam);
-
-                    if ($array) {
-                        $result = sprintf(
-                            config('tip.magnet.text'),
-                            $array['total'],
-                            $array['count'],
-                            implode('', $array['content'])
-                        );
-                    } else {
-                        $result = $result = sprintf(config('tip.user.noContent'), $result['content'][0]['title']);
-                    }
-                }
-
-                break;
+        $msgContent = sprintf(config('tip.message.error'), implode(' ', $this->msgValue));
 
 
-            case Example::MODEL_USER:
-                $result = (new Process(User::class))->run($param);
-                break;
+        if (isset($this->msgMean[Example::MODEL_MOVIE])) {
+            $msgType = Message::MSG_TYPE_NEWS;
+            $result = (new Process(Movie::class))->run($this->msgMean[Example::MODEL_MOVIE], Movie::$bindArrayParam);
+            if ($result) {
+                $msgContent = $result;
+                $this->status = [Example::MODEL_MOVIE, $this->msgMean[Example::MODEL_MOVIE]];
+            } else {
+                $msgContent = sprintf($msgContent, $this->getChinese($this->msgMean[Example::MODEL_MOVIE]));
+            }
         }
 
-        $this->result = [$result, $msgType];
+        if (isset($this->msgMean[Example::MODEL_MAGNET])) {
+            $result = null;
+            $msgType = Message::MSG_TYPE_TEXT;
+            if (isset($msgContent['count'])) {
+
+                if ($msgContent['count'] == 1) {
+                    array_push($this->msgMean[Example::MODEL_MAGNET][0], $msgContent['content'][0]['id']);
+
+                    $result = (new Process(Magnet::class))->run($this->msgMean[Example::MODEL_MAGNET], Magnet::$bindArrayParam);
+
+                } else {
+                    $msgContent = sprintf(config('tip.magnet.dataMore'), $msgContent['count']);
+                }
+            } else {
+                array_push($this->msgMean[Example::MODEL_MAGNET][0], User::select('last_at')->where());
+            }
+
+            if ($result) {
+                $this->status = [Example::MODEL_MAGNET, $msgContent['content'][0]['id']];
+                $msgContent = sprintf(
+                    config('tip.magnet.text'),
+                    $result['total'],
+                    $result['count'],
+                    $result['total'] > $result['count'] ? config('tip.magnet.more') : "",
+                    implode('',$result['content']));
+            } else {
+                $msgContent = sprintf(config('tip.magnet.noContent'), $msgContent['content'][0]['title']);
+            }
+        }
+        if (isset($this->msgMean[Example::MODEL_USER])) {
+            $result = (new Process(User::class))->run($this->msgMean[Example::MODEL_USER][0][0]);
+            if ($result) $msgContent = $result;
+
+        }
+
+        $this->result = [$msgContent, $msgType];
         return $this;
     }
 
@@ -170,10 +173,9 @@ class Handler
      * @param string $sendTo
      * @return $this
      */
-    protected function error($tip = '', $sendTo = '')
+    protected function error($tip = '')
     {
-        $sendTo == self::ERROR_USER ? $this->result = $tip : $this->errorTip = $tip;
-
+        $this->result = $tip;
         return $this;
     }
 
@@ -183,6 +185,21 @@ class Handler
      */
     public function logError()
     {
+
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getStatus()
+    {
+        return $this->status;
+    }
+
+    private function getChinese($data)
+    {
+        $array = [];
+//        return sprintf("周星驰主演刘镇伟导演刘镇伟编剧的中国喜剧电影",$array['actor'],$array['actor'])
 
     }
 

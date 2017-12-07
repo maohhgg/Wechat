@@ -63,9 +63,10 @@ class Entry
             } else if ($status == Event::TYPE_NORMAL) {
 
                 if (!isset($msgContent['error'])) {
+                    $handle = Handler::setText($msgContent['content']);
+                    $response = $handle->analyst();
 
-                    $response = Handler::setText($msgContent['content'])->analyst();
-
+                    Event::model(User::class)->userLastAction($msgContent,$handle->getStatus());
                     $message->setMessageContent($response)->send();
                 } else {
                     $message->setMessageContent(config('tip.user.support'))->send();

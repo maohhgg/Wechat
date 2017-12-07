@@ -19,7 +19,7 @@ class User extends Model
     public function hello($data)
     {
         $msgArray = config('tip.user.hello');
-        $index = random_int(0,count($msgArray));
+        $index = random_int(0, count($msgArray) - 1);
         return $msgArray[$index];
     }
 
