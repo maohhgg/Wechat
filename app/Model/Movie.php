@@ -10,11 +10,13 @@ class Movie extends Model
     protected $table = 'movie';
     public $timestamps = false;
 
+    public static $bindArrayParam = ['id', 'director', 'actor', 'chinese_name', 'douban', 'description', 'img'];
 
     public function bindArray($needle)
     {
-        $format = "导演：%s\n主演：%s\n\n简介:\n  %s\n\n回复“下载”获取磁力链接";
+        $format = config('tip.movie.news');
         return [
+            'id' => $needle['id'],
             'title' => $needle['chinese_name'],
             'description' => sprintf($format, $needle['director'], $needle['actor'], $needle['description']),
             'picUrl' => config('app.http') . config('app.host') . config('app.images') . "g_" . $needle['img'] . '.webp',

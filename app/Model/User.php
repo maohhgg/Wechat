@@ -16,9 +16,16 @@ class User extends Model
         return config('tip.user.help');
     }
 
+    public function hello($data)
+    {
+        $msgArray = config('tip.user.hello');
+        $index = random_int(0,count($msgArray));
+        return $msgArray[$index];
+    }
+
     public function error($data)
     {
-        return sprintf(config('tip.user.error'), $data['param']['other']);
+        return sprintf(config('tip.message.error'), $data['other']);
 //        return json_encode($data);
     }
 }
