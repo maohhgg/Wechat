@@ -19,7 +19,7 @@ class Process
         $this->model = new $model;
     }
 
-    public function run($data, $param = [], $limit = null)
+    public function run($data, $param = [], $order = null, $offset = 0, $limit = null)
     {
         $limit = $limit ? $limit : config('page.number');
 
@@ -28,27 +28,42 @@ class Process
                 $this->result = $this->model->{$data}($data);
                 break;
             case Movie::class:
-                $this->get($data, $param, $limit);
+                $this->get($data, $param, $order, $offset, $limit);
                 break;
             case Magnet::class:
-                $this->get($data, $param, $limit);
+                $this->get($data, $param, $order, $offset, $limit);
                 break;
         }
         return $this->result;
     }
 
-    private function get($data, $param, $limit)
+    private function get($data, $param, $order, $offset, $limit)
     {
+        var_dump($data);
+        $oderByName = null;
+        $oderBy = "desc";
+        if ($order) list($oderByName, $oderBy) = $order;
+        else list($oderByName, $oderBy) = ['id', 'DESC'];
+
+        $offset = $offset < 0 ? 0 : $offset;
+
         $total = $this->model->select($param)->where($this->getWhere($data))->count();
+
+        while ($offset > $total) {
+            $offset -= $limit;
+        }
 
         if ($total > 0) {
             $this->result = $this->model
                 ->select($param)
                 ->where($this->getWhere($data))
+                ->offset($offset)
                 ->limit($limit)
+                ->orderBy($oderByName, $oderBy)
+//                ->toSql();
+//            var_dump($this->result);
                 ->get()
                 ->toArray();
-
             $this->result = $this->getNews($this->result, $total);
         } else {
             $this->result = null;

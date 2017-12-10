@@ -8,8 +8,8 @@ use Wechat\Model\Model;
 class User extends Model
 {
     protected $table = 'users';
-    public $timestamps = false;
 
+    protected $fillable = ['token','admin','is_del','last_at'];
 
     public function help($data)
     {
@@ -27,5 +27,9 @@ class User extends Model
     {
         return sprintf(config('tip.message.error'), $data['other']);
 //        return json_encode($data);
+    }
+
+    public function bug($data){
+        return sprintf(config('tip.message.bug'));
     }
 }

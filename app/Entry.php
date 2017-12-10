@@ -46,12 +46,10 @@ class Entry
         if ($message->isSubscribeEvent()) {
             $status = Event::model(User::class)->subscribe($msgContent);
 
-            $status == Event::TYPE_FIRST ?
-                $message->setMessageContent(config('tip.subscribe.first'))->send() :
-                $message->setMessageContent(config('tip.subscribe.back'))->send();
+            $msg = $status == Event::TYPE_FIRST ? config('tip.subscribe.first') : config('tip.subscribe.back');
+            $message->setMessageContent($msg)->send();
 
         } else if ($message->isUnSubscribeEvent()) {
-
             Event::model(User::class)->unSubscribe($msgContent);
 
         } else {
@@ -64,6 +62,7 @@ class Entry
 
                 if (!isset($msgContent['error'])) {
                     $handle = Handler::setText($msgContent['content']);
+                    $handle->setUser($msgContent['uid']);
                     $response = $handle->analyst();
 
                     Event::model(User::class)->userLastAction($msgContent,$handle->getStatus());
@@ -76,4 +75,5 @@ class Entry
         }
 
     }
+
 }

@@ -41,21 +41,24 @@ class Event
      */
     public function subscribe($msg)
     {
-        if (is_array($msg && $this->model)) {
-            $user = ($this->user)->select(['id'])->where('token', $msg['uid'])->first();
+        if (is_array($msg) && $this->model) {
+            $user = ($this->model)->select(['id', 'is_del'])->where('token', $msg['uid'])->first();
 
             // 判断是否是重新关注或新关注的用户
-            if (!$user|| ($user->is_del == true)) {
-
-                ($this->model)->where('id', $user->id)->update(['is_del' => false]);
-                return self::TYPE_SUBSCRIBED;
+            if ($user) {
+                if($user->is_del){
+                    ($this->model)->where('id', $user->id)->update(['is_del' => false]);
+                    return self::TYPE_SUBSCRIBED;
+                }
             } else {
-
-                ($this->model)->created_at = $msg['time'];
-                ($this->model)->token = $msg['uid'];  // 用户唯一UID 用于在网页和公众号判断用户唯一
-                ($this->model)->is_del = false;  // 用户是否已关注
-                ($this->model)->admin = false;  // 管理员权限
-                ($this->model)->save();
+                $user = [
+                    'token' => $msg['uid'], // 用户唯一UID 用于在网页和公众号判断用户唯一
+                    'admin' => false,  // 管理员权限
+                    'last_at' => '',
+                    'is_del' => false, // 用户是否已关注
+                ];
+                $this->model->create($user);
+                var_dump($user);
                 return self::TYPE_FIRST;
             }
         }
@@ -68,10 +71,10 @@ class Event
      */
     public function unSubscribe($msg)
     {
-        if (is_array($msg && $this->model)) {
-            $user = ($this->user)->select(['id'])->where('token', $msg['uid'])->first();
+        if (is_array($msg) && $this->model) {
+            $user = ($this->model)->select(['id', 'is_del'])->where('token', $msg['uid'])->first();
 
-            if (!$user || ($user->is_del == true)) {
+            if (!$user) {
                 return self::TYPE_UNSUBSCRIBE;
             } else {
                 ($this->model)->where('id', $user->id)->update(['is_del' => true]);
@@ -91,7 +94,7 @@ class Event
         if (is_array($msg) && $this->user && $this->model) {
             $user = ($this->user)->select(['id', 'is_del'])->where('token', $msg['uid'])->first();
 
-            if (!$user || ($user->is_del == true)) return self::TYPE_UNSUBSCRIBE;
+            if ($user && ($user->is_del == true)) return self::TYPE_UNSUBSCRIBE;
 
             ($this->user)->where('id', $user->id)->update(['updated_at' => $msg['time']]);
 
@@ -103,8 +106,9 @@ class Event
     }
 
 
-    public function userLastAction($msg, $data){
-        if ($this->model && is_array($msg) && $data){
+    public function userLastAction($msg, $data)
+    {
+        if ($this->model && is_array($msg) && $data) {
             ($this->model)->where('token', $msg['uid'])->update(['last_at' => json_encode($data)]);
         }
     }
